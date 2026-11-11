@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#050b18"><title>JARVIS</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 20%,#12365a,#050b18 70%);color:#e9f8ff;font-family:Arial,sans-serif;display:flex;justify-content:center;padding:24px 14px}.app{width:100%;max-width:500px;text-align:center}.brand{color:#56e5ff;letter-spacing:6px;font-size:12px;margin-top:12px}h1{letter-spacing:6px;font-size:34px;text-shadow:0 0 18px #278bff}.sub,.hint{color:#91a9bd;font-size:13px}.status{display:inline-block;border:1px solid #1b4967;border-radius:30px;padding:8px 14px;color:#b9eafa;font-size:12px;margin:14px}.core{height:210px;width:210px;margin:18px auto;display:grid;place-items:center;border:1px solid #278bff;border-radius:50%;box-shadow:0 0 35px #159de955,inset 0 0 30px #159de933}.mic{height:112px;width:112px;border-radius:50%;border:1px solid #65eaff;background:linear-gradient(145deg,#236fa5,#09233f);color:white;font-size:38px;box-shadow:0 0 28px #159de988;cursor:pointer}.mic.listening{background:#087c9b;box-shadow:0 0 45px #33eaff}.card{background:#09172add;border:1px solid #17415d;border-radius:15px;padding:15px;text-align:left;margin:12px 0}.label{font-size:10px;color:#56e5ff;letter-spacing:2px;margin-bottom:8px}#response{min-height:42px;line-height:1.5}#heard{min-height:20px;color:#b7c9d8;font-size:13px}.entry{display:flex;gap:8px;margin-top:14px}input{min-width:0;flex:1;background:#071222;border:1px solid #1b4967;border-radius:10px;padding:13px;color:white;font-size:14px}button.send,.quick button{background:#0b3454;border:1px solid #205477;color:#d5f3ff;border-radius:10px;padding:11px 14px}.quick{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:13px}.quick button{border-radius:22px;font-size:12px}.foot{color:#6f8ba2;font-size:11px;line-height:1.5;margin:20px}
+</style></head>
+<body><main class="app">
+<div class="brand">PERSONAL ASSISTANT SYSTEM</div><h1>J.A.R.V.I.S.</h1><div class="sub">YOUR PERSONAL AI ASSISTANT</div>
+<div class="status" id="status">● SYSTEM READY</div>
+<div class="core"><button class="mic" id="mic">🎙</button></div><div class="hint">Tap the microphone and speak</div>
+<section class="card"><div class="label">YOU SAID</div><div id="heard">Waiting for your command…</div></section>
+<section class="card"><div class="label">JARVIS RESPONSE</div><div id="response">Hello! I am JARVIS. Your assistant is ready.</div></section>
+<div class="entry"><input id="command" placeholder="Type a command…" autocomplete="off"><button class="send" id="send">SEND</button></div>
+<div class="quick"><button data-cmd="What time is it?">TIME</button><button data-cmd="What is today's date?">DATE</button><button data-cmd="Hello Jarvis">HELLO</button><button data-cmd="Help">HELP</button></div>
+<div class="foot">FIRST PROTOTYPE • Local demo commands only<br>Microphone permission is required. No continuous listening.</div>
+</main>
+<script>
+const statusEl=document.getElementById('status'),responseEl=document.getElementById('response'),heardEl=document.getElementById('heard'),mic=document.getElementById('mic'),input=document.getElementById('command');
+function speak(t){if(!('speechSynthesis'in window))return;window.speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang='en-IN';u.rate=.95;window.speechSynthesis.speak(u)}
+function reply(t,voice=true){responseEl.textContent=t;if(voice)speak(t)}
+function run(raw){let q=raw.toLowerCase().trim();heardEl.textContent=raw||'No command entered.';
+if(!q){reply('Please say or type a command.',false);return}
+if(q.includes('time'))reply('The current time is '+new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}));
+else if(q.includes('date')||q.includes('day today'))reply('Today is '+new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
+else if(q.includes('hello')||q.includes('hi jarvis')||q.includes('good morning'))reply('Hello! I am online and ready to help you.');
+else if(q.includes('your name')||q.includes('who are you'))reply('I am JARVIS, your personal assistant prototype.');
+else if(q.includes('help')||q.includes('what can you do'))reply('Ask me for the time, date, say hello, or ask who I am. We will add more abilities soon.');
+else if(q.includes('thank'))reply('You are welcome. Happy to help.');
+else if(q.includes('goodbye')||q==='bye')reply('Goodbye. I will be here when you need me.');
+else reply('I heard: '+raw+'. My full AI brain is not connected yet.',false)}
+function listen(){let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){reply('Voice recognition is not supported here. Please type your command.',false);statusEl.textContent='TEXT MODE';return}
+let r=new SR();r.lang='en-IN';r.interimResults=false;r.maxAlternatives=1;r.onstart=()=>{statusEl.textContent='● LISTENING';mic.classList.add('listening')};r.onresult=e=>run(e.results[0][0].transcript);r.onerror=()=>reply('I could not hear clearly. Try again or type your command.',false);r.onend=()=>{statusEl.textContent='● SYSTEM READY';mic.classList.remove('listening')};try{r.start()}catch(e){}}
+mic.addEventListener('click',listen);document.getElementById('send').addEventListener('click',()=>{run(input.value);input.value=''});input.addEventListener('keydown',e=>{if(e.key==='Enter'){run(input.value);input.value=''}});document.querySelectorAll('[data-cmd]').forEach(b=>b.addEventListener('click',()=>run(b.dataset.cmd)));
+</script></body></html>
