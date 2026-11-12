@@ -20,16 +20,74 @@
 const statusEl=document.getElementById('status'),responseEl=document.getElementById('response'),heardEl=document.getElementById('heard'),mic=document.getElementById('mic'),input=document.getElementById('command');
 function speak(t){if(!('speechSynthesis'in window))return;window.speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang='en-IN';u.rate=.95;window.speechSynthesis.speak(u)}
 function reply(t,voice=true){responseEl.textContent=t;if(voice)speak(t)}
-function run(raw){let q=raw.toLowerCase().trim();heardEl.textContent=raw||'No command entered.';
-if(!q){reply('Please say or type a command.',false);return}
-if(q.includes('time'))reply('The current time is '+new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}));
-else if(q.includes('date')||q.includes('day today'))reply('Today is '+new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
-else if(q.includes('hello')||q.includes('hi jarvis')||q.includes('good morning'))reply('Hello! I am online and ready to help you.');
-else if(q.includes('your name')||q.includes('who are you'))reply('I am JARVIS, your personal assistant prototype.');
-else if(q.includes('help')||q.includes('what can you do'))reply('Ask me for the time, date, say hello, or ask who I am. We will add more abilities soon.');
-else if(q.includes('thank'))reply('You are welcome. Happy to help.');
-else if(q.includes('goodbye')||q==='bye')reply('Goodbye. I will be here when you need me.');
-else reply('I heard: '+raw+'. My full AI brain is not connected yet.',false)}
+let jarvisLoading = false;
+
+window.jarvisReceive = function(data) {
+  jarvisLoading = false;
+
+  if (data.error) {
+    reply("Sorry, I got an error: " + data.error, false);
+    return;
+  }
+
+  reply(data.reply || "I could not generate a reply.");
+};
+
+function run(raw) {
+  let q = raw.trim();
+
+  heardEl.textContent = raw || "No command entered.";
+
+  if (!q) {
+    reply("Please say or type a command.", false);
+    return;
+  }
+
+  let lower = q.toLowerCase();
+
+  if (lower.includes("time")) {
+    reply("The current time is " +
+      new Date().toLocaleTimeString("en-IN", {
+        hour: "numeric",
+        minute: "2-digit"
+      }));
+    return;
+  }
+
+  if (lower.includes("date") || lower.includes("day today")) {
+    reply("Today is " +
+      new Date().toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }));
+    return;
+  }
+
+  if (jarvisLoading) {
+    reply("Please wait, I am answering your previous question.", false);
+    return;
+  }
+
+  jarvisLoading = true;
+  reply("Thinking... Please wait.", false);
+
+  const script = document.createElement("script");
+
+  script.src =
+    "https://script.google.com/macros/s/AKfycbxYQuLdu05t0A_7p-B8X2F7O2m9qJVNLf1uBlP3tC14V5iwiHsEkiFn0f4pLKN3iZqQAQ/exec" +
+    "?message=" + encodeURIComponent(q) +
+    "&callback=jarvisReceive";
+
+  script.onerror = function() {
+    jarvisLoading = false;
+    reply("Connection error. Please try again.", false);
+    script.remove();
+  };
+
+  document.body.appendChild(script);
+}
 function listen(){let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){reply('Voice recognition is not supported here. Please type your command.',false);statusEl.textContent='TEXT MODE';return}
 let r=new SR();r.lang='en-IN';r.interimResults=false;r.maxAlternatives=1;r.onstart=()=>{statusEl.textContent='● LISTENING';mic.classList.add('listening')};r.onresult=e=>run(e.results[0][0].transcript);r.onerror=()=>reply('I could not hear clearly. Try again or type your command.',false);r.onend=()=>{statusEl.textContent='● SYSTEM READY';mic.classList.remove('listening')};try{r.start()}catch(e){}}
 mic.addEventListener('click',listen);document.getElementById('send').addEventListener('click',()=>{run(input.value);input.value=''});input.addEventListener('keydown',e=>{if(e.key==='Enter'){run(input.value);input.value=''}});document.querySelectorAll('[data-cmd]').forEach(b=>b.addEventListener('click',()=>run(b.dataset.cmd)));
